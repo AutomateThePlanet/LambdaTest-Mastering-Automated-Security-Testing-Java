@@ -1,0 +1,29 @@
+name: OWASP ZAP with LambdaTest
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  zap-scan:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Start OWASP ZAP in Daemon Mode
+        run: |
+          "C:\Program Files\OWASP\ZAP\zap.bat" -daemon -port 8088 -host 127.0.0.1
+
+      - name: Start LambdaTest Tunnel
+        run: |
+          LT.exe --user ${{ secrets.LT_USERNAME }} --key ${{ secrets.LT_ACCESS_KEY }} --tunnelName "ZAP-Tunnel" --proxy-host localhost --proxy-port 8088
+
+      - name: Run ZAP Scanner Plugin
+        run: |
+          curl http://127.0.0.1:8088 -H "Content-Type: application/json" -X POST -d '{"action": "startScan", "targetUrl": "http://example.com"}'
+
+      - name: Retrieve ZAP Alerts
+        run: |
+          curl http://127.0.0.1:8088/JSON/core/view/alerts/ -H "Content-Type: application/json"

@@ -1,0 +1,54 @@
+name: OWASP ZAP with LambdaTest Tunnel (Hosted)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  zap-scan:
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout Code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Step 2: Start OWASP ZAP in Daemon Mode
+      - name: Start OWASP ZAP Daemon
+        run: |
+          docker run -d --name zap -p 8080:8080 -i owasp/zap2docker-stable zap.sh -daemon -config api.key=${{ secrets.ZAP_API_KEY }}
+        env:
+          zap_api_key: ${{ secrets.ZAP_API_KEY }}
+      # Step 3: Start LambdaTest Tunnel
+      - name: Start LambdaTest Tunnel
+        uses: LambdaTest/LambdaTest-tunnel-action@v2
+        id: lt-tunnel
+        with:
+          user: ${{ secrets.LT_USERNAME }}
+          accessKey: ${{ secrets.LT_ACCESS_KEY }}
+          tunnelName: "ZAP-Tunnel"
+          proxyHost: localhost
+          proxyPort: 8088
+
+      # Step 4: Run ZAP Scan
+      - name: Run OWASP ZAP Full Scan
+        run: |
+          curl http://127.0.0.1:8088/JSON/ascan/action/scan/?url=http://example.com
+
+      # Step 5: Retrieve ZAP Scan Report
+      - name: Save ZAP Report
+        run: |
+          curl http://127.0.0.1:8088/OTHER/core/other/htmlreport/ -o zap-report.html
+
+      # Step 6: Upload ZAP Report as Artifact
+      - name: Upload ZAP Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: ZAP Report
+          path: zap-report.html
+
+      # Step 7: Stop ZAP and Clean Up
+      - name: Stop ZAP Daemon and Remove Container
+        run: |
+          docker stop zap
+          docker rm zap
