@@ -3,6 +3,7 @@ package security;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.junit.jupiter.api.*;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Cookie;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -32,7 +33,7 @@ class JuiceShopZapTests {
         driver.get(URL);
 
         // Dismiss welcome banner
-        driver.manage().deleteAllCookies();
+        driver.manage().addCookie(new Cookie("welcomebanner_status", "dismiss"));
         driver.navigate().refresh();
     }
 

@@ -3,6 +3,7 @@ package security;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.junit.jupiter.api.*;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Cookie;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -26,7 +27,8 @@ public class JuiceShopZapTestsCloud {
     public void setUp() throws Exception {
         WebDriverManager.chromedriver().setup();
         ChromeOptions options = new ChromeOptions();
-
+        //options.addArguments("--proxy-server=http://localhost:8088");
+        //options.addArguments("--ignore-certificate-errors");
         Map<String, Object> ltOptions = new HashMap<>();
         ltOptions.put("user", System.getenv("LT_USERNAME"));
         ltOptions.put("accessKey", System.getenv("LT_ACCESSKEY"));
@@ -35,6 +37,8 @@ public class JuiceShopZapTestsCloud {
         ltOptions.put("build", "SecurityTests");
         ltOptions.put("name", "JuiceShopZapTestsCloud");
         ltOptions.put("tunnel", true);
+        ltOptions.put("tunnelName", "ZAP-Tunnel");
+
 
         options.setCapability("LT:Options", ltOptions);
 
@@ -51,9 +55,13 @@ public class JuiceShopZapTestsCloud {
     }
 
     @Test
-    @Order(1)
     public void testCrawlJuiceShopForSecurityProblems() {
         driver.get(URL);
+
+        // Dismiss welcome banner
+        driver.manage().addCookie(new Cookie("welcomebanner_status", "dismiss"));
+        driver.navigate().refresh();
+
         waitForElement(By.xpath("//mat-icon[normalize-space(text())='search']")).click();
         WebElement searchElement = waitForElement(By.xpath("//*[@id='mat-input-0']"));
         searchElement.sendKeys("Apple Juice");
